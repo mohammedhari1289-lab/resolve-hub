@@ -18,7 +18,7 @@ export default async function LoginPage() {
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-md">
         <Logo className="mb-8" />
-        <h1 className="text-3xl font-bold">Welcome back</h1>
+        <h1 className="text-3xl font-bold">Welcome Home</h1>
         <p className="mt-1 text-slate-500">Sign in to see your complaints.</p>
         <ActionForm action={loginAction} className="card mt-6 space-y-4 p-6">
           <div>
