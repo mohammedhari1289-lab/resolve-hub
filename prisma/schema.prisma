@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  STAFF
+  ADMIN
+}
+
+enum Status {
+  SUBMITTED
+  UNDER_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Department {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  users       User[]
+  categories  Category[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  active       Boolean  @default(true)
+  departmentId String?
+  createdAt    DateTime @default(now())
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  submitted  Complaint[] @relation("Submitter")
+  assigned   Complaint[] @relation("Assignee")
+  history    ComplaintHistory[]
+  notifications Notification[]
+
+  @@index([role])
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String?
+  departmentId String?
+  createdAt    DateTime @default(now())
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  complaints Complaint[]
+}
+
+model Complaint {
+  id           String    @id @default(cuid())
+  ticketId     String    @unique
+  title        String
+  description  String
+  priority     Priority  @default(MEDIUM)
+  status       Status    @default(SUBMITTED)
+  resolution   String?
+  userId       String
+  categoryId   String
+  assignedToId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  resolvedAt   DateTime?
+
+  user       User      @relation("Submitter", fields: [userId], references: [id], onDelete: Cascade)
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  assignedTo User?     @relation("Assignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  history    ComplaintHistory[]
+
+  @@index([userId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model ComplaintHistory {
+  id          String    @id @default(cuid())
+  complaintId String
+  actorId     String?
+  fromStatus  Status?
+  toStatus    Status
+  remark      String?
+  createdAt   DateTime  @default(now())
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actor     User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([complaintId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
